@@ -13,8 +13,6 @@ from telegram.ext import (
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 import asyncio
 import logging
-from dotenv import load_dotenv
-load_dotenv()  # Load .env file
 
 
 # Enable logging
