@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
     ConversationHandler
 )
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 import asyncio
 import logging
 from dotenv import load_dotenv
@@ -81,22 +81,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def gallery_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Open web gallery"""
     user_id = update.effective_user.id
-
-    gallery_url = f"http://localhost:5173/?userId={user_id}"
-
+    webapp_url = f"https://cloudbotfrontend-c3mzckyy8-tesrekt-05s-projects.vercel.app/?userId={user_id}"
+    keyboard = [
+        [InlineKeyboardButton(
+            "📂 Open Gallery", web_app=WebAppInfo(url=webapp_url))]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        f"🌟 <b>Open Your Cloud Gallery</b>\n\n"
-        f"📂 <a href='{gallery_url}'>Click here to open gallery</a>\n\n"
-        f"✨ Features:\n"
-        f"• 📸 Photo grid layout\n"
-        f"• 🗑️ Multi-select delete\n"
-        f"• 📁 Folder management\n"
-        f"• ⚡ Fast & responsive\n\n"
-        f"Or copy this link:\n<code>{gallery_url}</code>",
-        parse_mode='HTML',
-        disable_web_page_preview=True
+        "🌟 <b>Open Your Cloud Gallery</b>\n\nClick the button below - opens right inside Telegram!",
+        reply_markup=reply_markup,
+        parse_mode='HTML'
     )
 
 
