@@ -15,11 +15,11 @@ function App() {
   const getUserId = (): number => {
     const params = new URLSearchParams(window.location.search);
     const userIdFromUrl = params.get('userId');
-    
+
     if (userIdFromUrl) {
       return parseInt(userIdFromUrl);
     }
-    
+
     // Fallback to your test user ID for local development
     return 7053775316; // Replace with your actual user ID
   };
@@ -38,12 +38,14 @@ function App() {
       const data = await getFolders(userId);
       setFolders(data);
     } catch (err) {
-      setError('Failed to load folders');
+      // If failed, show helpful message about cold start
+      setError('Loading... Backend is waking up (free tier). Please wait 30 seconds and try again.');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleFolderClick = async (folderId: number) => {
     try {
