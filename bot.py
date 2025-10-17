@@ -1,7 +1,6 @@
 # bot.py
-import logging
-import asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from database import Database
+from config import BOT_TOKEN, DATABASE_NAME
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -11,9 +10,12 @@ from telegram.ext import (
     filters,
     ConversationHandler
 )
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import asyncio
+import logging
+from dotenv import load_dotenv
+load_dotenv()  # Load .env file
 
-from config import BOT_TOKEN, DATABASE_NAME
-from database import Database
 
 # Enable logging
 logging.basicConfig(

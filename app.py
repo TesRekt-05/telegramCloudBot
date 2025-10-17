@@ -1,9 +1,12 @@
 # app.py
-from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
-from database import Database
-from config import DATABASE_NAME
 import os
+from config import DATABASE_NAME
+from database import Database
+from flask_cors import CORS
+from flask import Flask, jsonify, request, send_from_directory
+from dotenv import load_dotenv
+load_dotenv()  # Load .env file
+
 
 app = Flask(__name__, static_folder='frontend/dist')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -12,18 +15,22 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 db = Database(DATABASE_NAME)
 
 # Test endpoint
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'ok', 'message': 'API is running'})
 
 # Get user folders
+
+
 @app.route('/api/folders/<int:user_id>', methods=['GET'])
 def get_folders(user_id):
     """Get all folders for a user"""
     try:
         folders = db.get_user_folders(user_id)
-        
+
         # Format response
         folders_data = []
         for folder_id, folder_name, created_at, file_count in folders:
@@ -33,7 +40,7 @@ def get_folders(user_id):
                 'file_count': file_count,
                 'created_at': created_at
             })
-        
+
         return jsonify({
             'success': True,
             'folders': folders_data
@@ -45,12 +52,14 @@ def get_folders(user_id):
         }), 500
 
 # Get files in a folder
+
+
 @app.route('/api/folders/<int:folder_id>/files', methods=['GET'])
 def get_folder_files(folder_id):
     """Get all files in a folder"""
     try:
         files = db.get_folder_files(folder_id)
-        
+
         # Format response
         files_data = []
         for file_db_id, file_id, file_name, file_type, file_size, uploaded_at in files:
@@ -62,7 +71,7 @@ def get_folder_files(folder_id):
                 'size': file_size,
                 'uploaded_at': uploaded_at
             })
-        
+
         return jsonify({
             'success': True,
             'files': files_data
@@ -74,6 +83,8 @@ def get_folder_files(folder_id):
         }), 500
 
 # Delete file
+
+
 @app.route('/api/files/<int:file_id>', methods=['DELETE'])
 def delete_file(file_id):
     """Delete a file"""
@@ -90,6 +101,8 @@ def delete_file(file_id):
         }), 500
 
 # Delete folder
+
+
 @app.route('/api/folders/<int:folder_id>', methods=['DELETE'])
 def delete_folder(folder_id):
     """Delete a folder and all its files"""
@@ -106,6 +119,8 @@ def delete_folder(folder_id):
         }), 500
 
 # Get user stats
+
+
 @app.route('/api/stats/<int:user_id>', methods=['GET'])
 def get_stats(user_id):
     """Get user storage statistics"""
@@ -122,6 +137,8 @@ def get_stats(user_id):
         }), 500
 
 # Serve React app (for production)
+
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react_app(path):
@@ -131,7 +148,11 @@ def serve_react_app(path):
     else:
         return send_from_directory(app.static_folder, 'index.html')
 
+
 if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    
     print("🚀 Flask API Server Starting...")
     print("📊 API Endpoints:")
     print("   - GET  /api/health")
@@ -140,6 +161,6 @@ if __name__ == '__main__':
     print("   - DELETE /api/files/<file_id>")
     print("   - DELETE /api/folders/<folder_id>")
     print("   - GET  /api/stats/<user_id>")
-    print("\n🌐 Server running on http://localhost:5000")
+    print(f"\n🌐 Server running on port {port}")
     
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -1,7 +1,8 @@
 # config.py
-# Store your bot token here (get it from BotFather)
-# Replace with your actual token
-BOT_TOKEN = "8338124872:AAEDBGm4LsDhG4T6U40JYtLspUiUyvyOiWc"
+import os
 
-# Database file name
-DATABASE_NAME = "telegram_cloud.db"
+# For bot (not used by Flask API)
+BOT_TOKEN = os.getenv('BOT_TOKEN', 'your-token-here')
+
+# For database (used by both)
+DATABASE_NAME = os.getenv('DATABASE_NAME', 'telegram_cloud.db')
