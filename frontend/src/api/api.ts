@@ -38,6 +38,12 @@ export const getFolderFiles = async (folderId: number): Promise<File[]> => {
   return response.data.files;
 };
 
+// NEW: Get file URL from Telegram
+export const getFileUrl = async (fileId: number): Promise<string> => {
+  const response = await axios.get(`${API_BASE_URL}/file/${fileId}/url`);
+  return response.data.url;
+};
+
 export const deleteFile = async (fileId: number): Promise<void> => {
   await axios.delete(`${API_BASE_URL}/files/${fileId}`);
 };

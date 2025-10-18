@@ -80,7 +80,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def gallery_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    webapp_url = f"https://cloudbotfrontend-c3mzckyy8-tesrekt-05s-projects.vercel.app/?userId={user_id}"
+    webapp_url = f"https://cloudbotfrontend-8e8356t2l-tesrekt-05s-projects.vercel.app/?userId={user_id}"
     keyboard = [
         [InlineKeyboardButton(
             "📂 Open Gallery", web_app=WebAppInfo(url=webapp_url))]

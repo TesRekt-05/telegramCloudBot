@@ -1,131 +1,192 @@
 // frontend/src/components/FileGallery.tsx
-import React, { useState } from 'react';
-import type { File } from '../api/api';
+import { useState, useEffect } from 'react';
+import { File as FileType, getFolderFiles, deleteFile, getFileUrl } from '../api/api';
+import { PhotoModal } from '../components/PhotoModal';
 
 interface FileGalleryProps {
-    files: File[];
-    onDeleteFiles: (fileIds: number[]) => void;
-    onBack: () => void;
+  folderId: number;
+  folderName: string;
+  onBack: () => void;
 }
 
-const FileGallery: React.FC<FileGalleryProps> = ({ files, onDeleteFiles, onBack }) => {
-    const [selectedFiles, setSelectedFiles] = useState<Set<number>>(new Set());
+export const FileGallery = ({ folderId, folderName, onBack }: FileGalleryProps) => {
+  const [files, setFiles] = useState<FileType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileType | null>(null);
+  const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
+  const [loadingUrls, setLoadingUrls] = useState<Record<number, string>>({});
 
-    const toggleFileSelection = (fileId: number) => {
-        const newSelection = new Set(selectedFiles);
-        if (newSelection.has(fileId)) {
-            newSelection.delete(fileId);
-        } else {
-            newSelection.add(fileId);
+  useEffect(() => {
+    loadFiles();
+  }, [folderId]);
+
+  const loadFiles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getFolderFiles(folderId);
+      setFiles(data);
+
+      // Preload URLs for photos
+      data.forEach(async (file) => {
+        if (file.type === 'photo') {
+          try {
+            const url = await getFileUrl(file.id);
+            setLoadingUrls((prev) => ({ ...prev, [file.id]: url }));
+          } catch (err) {
+            console.error(`Failed to load URL for file ${file.id}:`, err);
+          }
         }
-        setSelectedFiles(newSelection);
-    };
+      });
+    } catch (err) {
+      setError('Failed to load files');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleDeleteSelected = () => {
-        if (selectedFiles.size === 0) return;
-        if (confirm(`Delete ${selectedFiles.size} selected file(s)?`)) {
-            onDeleteFiles(Array.from(selectedFiles));
-            setSelectedFiles(new Set());
-        }
-    };
+  const handleFileClick = async (file: FileType) => {
+    try {
+      // Get file URL if not already loaded
+      const url = loadingUrls[file.id] || (await getFileUrl(file.id));
+      setSelectedFileUrl(url);
+      setSelectedFile(file);
+    } catch (err) {
+      console.error('Failed to load file:', err);
+      alert('Failed to load file preview');
+    }
+  };
 
-    const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024 * 1024) {
-            return `${(bytes / 1024).toFixed(2)} KB`;
-        }
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    };
+  const handleDelete = async (fileId: number) => {
+    try {
+      await deleteFile(fileId);
+      setFiles(files.filter((f) => f.id !== fileId));
+    } catch (err) {
+      console.error('Failed to delete file:', err);
+      alert('Failed to delete file');
+    }
+  };
 
-    const getFileIcon = (type: string) => {
-        switch (type) {
-            case 'photo':
-                return '🖼️';
-            case 'video':
-                return '🎥';
-            case 'audio':
-                return '🎵';
-            case 'document':
-                return '📄';
-            default:
-                return '📎';
-        }
-    };
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'photo':
+        return '🖼️';
+      case 'video':
+        return '🎥';
+      case 'audio':
+        return '🎵';
+      case 'document':
+        return '📄';
+      default:
+        return '📎';
+    }
+  };
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(2)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  if (loading) {
     return (
-        <div className="h-full flex flex-col">
-            {/* Header */}
-            <div className="bg-blue-500 text-white p-4 flex items-center justify-between">
-                <button
-                    onClick={onBack}
-                    className="flex items-center hover:bg-blue-600 px-3 py-2 rounded"
-                >
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                    </svg>
-                    Back
-                </button>
-                {selectedFiles.size > 0 && (
-                    <button
-                        onClick={handleDeleteSelected}
-                        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-medium"
-                    >
-                        🗑️ Delete ({selectedFiles.size})
-                    </button>
-                )}
-            </div>
-
-            {/* File Grid */}
-            <div className="flex-1 overflow-y-auto p-4">
-                {files.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <svg className="w-20 h-20 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                        </svg>
-                        <p className="text-lg">No files in this folder</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {files.map((file) => (
-                            <div
-                                key={file.id}
-                                onClick={() => toggleFileSelection(file.id)}
-                                className={`relative bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden ${selectedFiles.has(file.id) ? 'ring-4 ring-blue-500' : ''
-                                    }`}
-                            >
-                                {/* Selection Checkbox */}
-                                <div className="absolute top-2 right-2 z-10">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedFiles.has(file.id)}
-                                        onChange={() => toggleFileSelection(file.id)}
-                                        className="w-5 h-5 cursor-pointer"
-                                        aria-label={`Select ${file.name}`}
-                                        title={`Select ${file.name}`}
-                                    />
-
-                                </div>
-
-                                {/* File Preview */}
-                                <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                                    <span className="text-6xl">{getFileIcon(file.type)}</span>
-                                </div>
-
-                                {/* File Info */}
-                                <div className="p-3">
-                                    <p className="text-sm font-medium text-gray-800 truncate" title={file.name}>
-                                        {file.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {formatFileSize(file.size)}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin text-4xl mb-2">⏳</div>
+          <p className="text-gray-600">Loading files...</p>
         </div>
+      </div>
     );
-};
+  }
 
-export default FileGallery;
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={onBack}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition"
+        >
+          ← Back
+        </button>
+        <h2 className="text-2xl font-bold">📁 {folderName}</h2>
+        <span className="text-gray-500">({files.length} files)</span>
+      </div>
+
+      {/* Files Grid */}
+      {files.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">No files in this folder</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
+              onClick={() => handleFileClick(file)}
+            >
+              {/* Thumbnail */}
+              <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                {file.type === 'photo' && loadingUrls[file.id] ? (
+                  <img
+                    src={loadingUrls[file.id]}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-6xl">{getFileIcon(file.type)}</span>
+                )}
+              </div>
+
+              {/* File info */}
+              <div className="p-3">
+                <p className="text-sm font-medium truncate mb-1">{file.name}</p>
+                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+              </div>
+
+              {/* Delete button */}
+              <div className="px-3 pb-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Delete "${file.name}"?`)) {
+                      handleDelete(file.id);
+                    }
+                  }}
+                  className="w-full bg-red-500 text-white text-sm py-1 rounded hover:bg-red-600 transition"
+                >
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Photo Modal */}
+      {selectedFile && selectedFileUrl && (
+        <PhotoModal
+          file={selectedFile}
+          fileUrl={selectedFileUrl}
+          onClose={() => {
+            setSelectedFile(null);
+            setSelectedFileUrl(null);
+          }}
+          onDelete={() => handleDelete(selectedFile.id)}
+        />
+      )}
+    </div>
+  );
+};
